@@ -2,6 +2,7 @@
 import time
 import ffmpeg
 import tempfile
+import subprocess
 import dashscope
 from dashscope.audio.tts_v2 import *
 import shutil
@@ -14,8 +15,8 @@ import requests
 from moviepy.editor import VideoFileClip, AudioFileClip, CompositeVideoClip, TextClip, concatenate_videoclips
 from moviepy.config import change_settings
 import threading
-# API_KEY = 'sk-e5a2cf9c95de4b628a35daa9975ef608'
-API_KEY = os.environ['API_KEY']
+# API_KEY = os.environ['API_KEY']
+API_KEY = "sk-e5a2cf9c95de4b628a35daa9975ef608"
 # ==================================================step 1 拆分诗词
 def splitPoetry(poetry):
     tmpSentences = poetry.split('\n')
@@ -30,7 +31,7 @@ def splitPoetry(poetry):
 # ==================================================step 2 把每一句诗词转化为audio
 dashscope.api_key = API_KEY
 model = "cosyvoice-v3-flash" # 模型
-voice = "longanyang" # 音色
+voice = "longanhuan" # 音色
 USE_CONNECTION_POOL = True
 connectionPool = SpeechSynthesizerObjectPool(max_size=3)
 
@@ -126,14 +127,18 @@ def synthesis_text_to_speech_and_play_by_streaming_mode(title, sentence):
     # you can customize the synthesis parameters, like voice, format, sample_rate or other parameters
     if USE_CONNECTION_POOL:
         speech_synthesizer = connectionPool.borrow_synthesizer(
-            model='cosyvoice-v3-flash',
-            voice='longanyang',
+            model=model,
+            voice=voice,
             seed=12382,
+            volume=80,            # 音量80%，适中
+            speech_rate=0.85,     # 取值范围：[0.5, 2.0]。1.0为音色自然音高。大于1.0则音高变高，小于1.0则音高变低
             callback=synthesizer_callback
         )
     else:
-        speech_synthesizer = SpeechSynthesizer(model='cosyvoice-v3-flash',
-                                               voice='longanyang',
+        speech_synthesizer = SpeechSynthesizer(model=model,
+                                               voice=voice,
+                                               volume=80,            # 音量80%，适中
+                                               speech_rate=0.85,     # 取值范围：[0.5, 2.0]。1.0为音色自然音高。大于1.0则音高变高，小于1.0则音高变低
                                                seed=12382,
                                                callback=synthesizer_callback)
     try:
@@ -335,67 +340,15 @@ def generate_videos(title, sentences):
 
 # ==================================================step 5 拼接视频、音频和字幕
 # 配置ImageMagick路径
-change_settings({"IMAGEMAGICK_BINARY": r"D:\apps\ImageMagick-7.1.2-11-portable-Q16-HDRI-x64\magick.exe"})
+change_settings({"IMAGEMAGICK_BINARY": r"E:\exe\ImageMagick-7.1.2-11-portable-Q8-x64\magick.exe"})
 
 
-def merge_videos(video_paths, output_path):
-    """
-    健壮的视频合并函数，处理各种编码问题
-    """
-    # 验证文件路径
-    for path in video_paths:
-        if not os.path.exists(path):
-            print(f"错误: 文件不存在 - {path}")
-            return False
-
-    # 检查输出路径的编码兼容性
-    try:
-        output_path.encode('utf-8')
-    except UnicodeEncodeError:
-        print("输出路径包含不兼容的字符，请使用英文路径")
-        return False
-
-    temp_file = None
-    try:
-        # 创建临时文件列表
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as f:
-            temp_file = f.name
-            for path in video_paths:
-                abs_path = os.path.abspath(path).replace('\\', '/')
-                f.write(f"file '{abs_path}'\n")
-
-        # 尝试使用ffmpeg-python
-        try:
-            stream = ffmpeg.input(temp_file, format='concat', safe=0)
-            stream = ffmpeg.output(stream, output_path, c='copy')
-            ffmpeg.run(stream, overwrite_output=True, quiet=True)
-        except ffmpeg.Error as e:
-            # 处理错误输出的编码问题
-            if e.stderr:
-                try:
-                    error_msg = e.stderr.decode('utf-8', errors='replace')
-                except:
-                    error_msg = str(e.stderr)
-                print(f"FFmpeg错误: {error_msg}")
-            return False
-
-        print(f"视频合并成功，输出文件: {output_path}")
-        return True
-
-    except UnicodeError as e:
-        print(f"编码错误: {str(e)}")
-        print("建议：确保文件路径不包含特殊字符或使用英文路径")
-        return False
-    except Exception as e:
-        print(f"合并视频时出错: {str(e)}")
-        return False
-    finally:
-        # 清理临时文件
-        if temp_file and os.path.exists(temp_file):
-            try:
-                os.unlink(temp_file)
-            except:
-                pass
+def merge_videos(input_files, output_file):
+    input_args = ""
+    for file in input_files:
+        input_args += f"-i {file} "
+    command = f"ffmpeg {input_args} -filter_complex concat=n={len(input_files)}:v=1:a=1 -f mp4 {output_file}"
+    subprocess.run(command, shell=True)
 
 def add_audio_and_subtitles(video_path, audio_path=None, subtitles=None, output_path="output.mp4",
                             subtitle_position='bottom', subtitle_font=None, subtitle_size=50,
@@ -455,6 +408,71 @@ def add_audio_and_subtitles(video_path, audio_path=None, subtitles=None, output_
 
     print(f"视频已保存到: {output_path}")
 
+def add_bg_music_with_ffmpeg(video_path,
+                             bg_music_path,
+                             output_path,
+                             bg_volume=0.3,
+                             video_audio_volume=1.0,
+                             audio_bitrate="192k"):
+    """
+    通过Python调用FFmpeg，给视频添加背景音乐并保留原声（默认背景音乐时长≥视频时长）
+    :param video_path: 原视频文件路径（支持绝对路径/相对路径，可含空格）
+    :param bg_music_path: 背景音乐文件路径（支持MP3/WAV/AAC等，默认时长≥视频时长）
+    :param output_path: 输出视频文件路径
+    :param bg_volume: 背景音乐音量（0.0-1.0，默认0.3，避免盖过原声）
+    :param video_audio_volume: 视频原声音量（0.0-1.0，默认1.0）
+    :param audio_bitrate: 输出音频比特率（默认192k，保证音质）
+    :return: 布尔值，True表示执行成功，False表示执行失败
+    """
+    # 校验输入文件是否存在
+    if not os.path.exists(video_path):
+        print(f"错误：原视频文件不存在 -> {video_path}")
+        return False
+    if not os.path.exists(bg_music_path):
+        print(f"错误：背景音乐文件不存在 -> {bg_music_path}")
+        return False
+
+    # 构造FFmpeg命令（核心：amix滤镜混合音频，-c:v copy快速复制视频流）
+    # 兼容路径含空格的场景，所有路径无需额外加引号，subprocess会自动处理
+    ffmpeg_cmd = [
+        "ffmpeg",
+        "-i", video_path,          # 输入原视频
+        "-i", bg_music_path,       # 输入背景音乐
+        "-filter_complex",         # 复杂滤镜链
+        # 步骤1：调整原视频音量；步骤2：调整背景音乐音量；步骤3：混合两个音频流
+        f"[0:a]volume={video_audio_volume}[v_audio];[1:a]volume={bg_volume}[bg_audio];[v_audio][bg_audio]amix=inputs=2:duration=first:dropout_transition=2[aout]",
+        "-map", "0:v",             # 保留原视频的视频流（不重新编码）
+        "-map", "[aout]",          # 映射混合后的音频流
+        "-c:v", "copy",            # 视频流直接复制，大幅提升速度，不损失质量
+        "-c:a", "aac",             # 音频编码为AAC，兼容所有播放器
+        "-b:a", audio_bitrate,     # 音频比特率
+        "-y",                      # 覆盖已有输出文件（无需手动确认）
+        output_path
+    ]
+
+    try:
+        # 执行FFmpeg命令，隐藏终端输出（stdout/stderr重定向）
+        print(f"开始处理视频...")
+        print(f"原视频：{video_path}")
+        print(f"背景音乐：{bg_music_path}")
+        print(f"输出路径：{output_path}")
+        # subprocess.run 阻塞执行，捕获异常
+        result = subprocess.run(
+            ffmpeg_cmd,
+            stdout=subprocess.DEVNULL,  # 屏蔽标准输出
+            stderr=subprocess.PIPE,     # 捕获错误输出
+            encoding="utf-8",
+            check=True
+        )
+        print(f"成功！视频已保存至 -> {output_path}")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"错误：FFmpeg执行失败 -> {e.stderr}")
+        return False
+    except Exception as e:
+        print(f"错误：未知异常 -> {str(e)}")
+        return False
+
 def generate_final_video(title, sentences):
     videos = []
     for sentence in sentences:
@@ -462,7 +480,7 @@ def generate_final_video(title, sentences):
         audio_file = f"./{title}/audio/{sentence}.mp3"
         print(f"{video_file} --> {audio_file}")
         subtitles = [{'text': sentence, 'start': 0, 'end': 5}]
-        output_path = f"{title}/{sentence}.mp4"
+        output_path = f"{title}/{sentence.replace(' ','')}.mp4"
         videos.append(output_path)
         add_audio_and_subtitles(
             video_path=video_file,
@@ -471,7 +489,22 @@ def generate_final_video(title, sentences):
             output_path=output_path,
             subtitle_font='C:/Windows/Fonts/simhei.ttf'  # 使用黑体
         )
-    merge_videos(videos, f"{title}/{title}.mp4")
+    merge_videos(videos, f"{title}/tmp_{title}.mp4")
+
+    # 调用函数
+    success = add_bg_music_with_ffmpeg(
+        video_path=f"{title}/tmp_{title}.mp4",
+        bg_music_path='back.mp3',
+        output_path=f"{title}/{title}.mp4",
+        bg_volume=0.25,  # 背景音乐音量稍低，更柔和
+        video_audio_volume=1.0
+    )
+
+    # 根据执行结果提示
+    if success:
+        print("视频处理完成！")
+    else:
+        print("视频处理失败，请检查文件路径或FFmpeg是否安装。")
 
 
 
@@ -485,7 +518,10 @@ if __name__ == '__main__':
     title = "虞美人"
     content = "虞美人·春花秋月何时了，李煜。春花秋月何时了？往事知多少。小楼昨夜又东风，故国不堪回首月明中。雕栏玉砌应犹在，只是朱颜改。问君能有几多愁？恰似一江春水向东流。"
     # title = "如梦令"
-    # content = "如梦令，高清清。高天云淡风初暖，清溪照人面。清歌一曲过桥东，柳外纸鸢飞上、碧空中。桃花笑靥迎新雨，燕语穿林舞。此身合是画中行，不负春光十里、满襟晴。"
+    # content = "如梦令，高清清。高天云淡风初暖，清溪照人面。清歌一曲过桥东，柳外纸鸢飞上、碧水中。桃花笑靥迎新雨，燕语穿林舞。此身合是画中行，不负春光十里、满襟晴。"
+
+    title = "登高"
+    content = "登高 唐 杜甫。风急天高猿啸哀，渚清沙白鸟飞回。无边落木萧萧下，不尽长江滚滚来。万里悲秋常作客，百年多病独登台。艰难苦恨繁霜鬓，潦倒新停浊酒杯。"
 
     # step 1. 拆分诗词
     print("step 1. 开始拆分诗词...")
@@ -494,22 +530,22 @@ if __name__ == '__main__':
         print(sentence)
     print()
 
-    # # step 2. 把每一句诗词转化为audio
-    # print("step 2. 开始把每一句诗词转化为audio...")
-    # generate_audio(title, sentences)
-    # time.sleep(20)
-    # print()
-    #
-    # # step 3. 分析每一句诗词，每一句对应一个镜头场景
-    # print("step 3. 开始分析每一句诗词，每一句对应一个镜头场景...")
-    # generate_lens(title, sentences)
-    # print()
-    #
-    # # step 4. 根据镜头场景生成视频
-    # print("step 4. 开始根据镜头场景生成视频...")
-    # generate_videos(title, sentences)
-    # print()
-    #
-    # # step 5. 拼接视频、音频和字幕
-    # print("step 5. 开始拼接视频、音频和字幕...")
-    # generate_final_video(title, sentences)
+    # step 2. 把每一句诗词转化为audio
+    print("step 2. 开始把每一句诗词转化为audio...")
+    generate_audio(title, sentences)
+    time.sleep(20)
+    print()
+    
+    # step 3. 分析每一句诗词，每一句对应一个镜头场景
+    print("step 3. 开始分析每一句诗词，每一句对应一个镜头场景...")
+    generate_lens(title, sentences)
+    print()
+    
+    # step 4. 根据镜头场景生成视频
+    print("step 4. 开始根据镜头场景生成视频...")
+    generate_videos(title, sentences)
+    print()
+    
+    # step 5. 拼接视频、音频、字幕
+    print("step 5. 开始拼接视频、音频、字幕和背景音乐...")
+    generate_final_video(title, sentences)
