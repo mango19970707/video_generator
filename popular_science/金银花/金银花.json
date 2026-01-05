@@ -1,0 +1,80 @@
+{
+  "video_basic_info": {
+    "theme": "金银花",
+    "style": "科普纪实风，画面清晰明亮，节奏轻快"
+  },
+  "storyboard_list": [
+    {
+      "duration": 5,
+      "voice_text": "大家好，今天科普中药材金银花",
+      "picture_content": "镜头对准干燥金银花全貌，铺在浅色竹编小匾内，背景为自然木纹桌面",
+      "shot_type": "近景"
+    },
+    {
+      "duration": 5,
+      "voice_text": "它性味甘寒，归肺心经，清热常用",
+      "picture_content": "特写干金银花条状花朵，可见黄白相间色泽，镜头缓慢推进展示细节",
+      "shot_type": "特写"
+    },
+    {
+      "duration": 5,
+      "voice_text": "核心功效是清热解毒，疏散风热",
+      "picture_content": "动态图文叠加：左侧金银花特写，右侧浮现‘清热解毒’‘疏散风热’白色文字气泡",
+      "shot_type": "近景+图文叠加"
+    },
+    {
+      "duration": 5,
+      "voice_text": "能改善上火咽痛，调理感冒初起",
+      "picture_content": "中景展示：一杯冲泡好的淡黄色金银花茶，旁边放一罐干花和温度计（显示水温约80℃）",
+      "shot_type": "中景"
+    },
+    {
+      "duration": 5,
+      "voice_text": "日常可泡水喝，简单又方便",
+      "picture_content": "近景演示：用茶匙取3克干花放入玻璃杯，倒入温水，花朵缓缓舒展",
+      "shot_type": "近景（演示）"
+    },
+    {
+      "duration": 5,
+      "voice_text": "每次用量6-10克，不宜久煎",
+      "picture_content": "特写电子秤显示6克金银花，旁边标注‘每日参考量’红色箭头指示",
+      "shot_type": "特写"
+    },
+    {
+      "duration": 5,
+      "voice_text": "脾胃虚寒者慎用，经期女性少用",
+      "picture_content": "浅红色警示字幕叠加在茶汤背景上，文字为‘脾胃虚寒者慎用’‘经期勿多饮’",
+      "shot_type": "静态字幕叠加"
+    },
+    {
+      "duration": 5,
+      "voice_text": "搭配薄荷一起泡，清凉更解暑",
+      "picture_content": "近景：透明杯中放入金银花与几片新鲜薄荷叶，注入热水后升起袅袅热气",
+      "shot_type": "近景"
+    },
+    {
+      "duration": 5,
+      "voice_text": "夏天喝一杯，帮助身体降燥热",
+      "picture_content": "特写：杯中漂浮的金银花与薄荷，水面微微晃动，阳光透过窗户洒入",
+      "shot_type": "特写"
+    },
+    {
+      "duration": 5,
+      "voice_text": "金银花是天然清火好帮手，用对才有效",
+      "picture_content": "近景：密封罐装金银花置于木质架上，标签清晰可见，手轻轻合上罐盖",
+      "shot_type": "近景"
+    },
+    {
+      "duration": 5,
+      "voice_text": "健康生活靠日常，关注我学更多",
+      "picture_content": "中景：背景为中药铺风格陈列架，屏幕下方出现白色关注引导字幕",
+      "shot_type": "中景+字幕引导"
+    },
+    {
+      "duration": 5,
+      "voice_text": "",
+      "picture_content": "黑屏+白色文字“本视频仅作科普，不构成用药建议”",
+      "shot_type": "静态文字"
+    }
+  ]
+}

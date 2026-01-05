@@ -1,0 +1,26 @@
+api:
+  dashscope_key: "sk-e5a2cf9c95de4b628a35daa9975ef608"
+  base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+
+tts:
+  model: "cosyvoice-v3-flash"
+  voice: "longanhuan"
+  volume: 80
+  speech_rate: 0.85
+
+llm:
+  model: "qwen-plus"
+
+video:
+  model: "wanx2.1-t2v-plus"
+  size: "1088*832"
+  duration: 3
+
+paths:
+  imagemagick: "E:\\exe\\ImageMagick-7.1.2-11-portable-Q8-x64\\magick.exe"
+  font: "C:/Windows/Fonts/simhei.ttf"
+  bg_music: "back.mp3"
+
+poetry:
+  title: "咏鹅"
+  content: "咏鹅 唐 骆宾王。鹅，鹅，鹅，曲项向天歌。白毛浮绿水，红掌拨清波。"

@@ -1,7 +1,5 @@
 # coding=utf-8
 import time
-import ffmpeg
-import tempfile
 import subprocess
 import dashscope
 from dashscope.audio.tts_v2 import *
